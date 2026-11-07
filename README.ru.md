@@ -9,7 +9,7 @@
 ## Установка
 
 ```
-pip install git+https://github.com/nowplaylab/yeelight-lan@v0.1.0
+pip install git+https://github.com/nowplaylab/yeelight-lan@v0.1.1
 ```
 
 Python 3.9+. Сначала включите для устройства **«Управление по локальной сети»** в приложении Yeelight.

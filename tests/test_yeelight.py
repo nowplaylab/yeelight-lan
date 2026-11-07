@@ -64,6 +64,8 @@ class YeelightTest(unittest.IsolatedAsyncioTestCase):
                 None, lambda: yeelight_lan.discover(1.0, target=('127.0.0.1', 1982)))
         finally:
             strip.server.close()
+            if strip.ssdp:
+                strip.ssdp.close()
         mine = [d for d in found if d.id == strip.id]
         if not mine:
             self.skipTest('порт поиска 1982 занят (например, уже запущен эмулятор)')

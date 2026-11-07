@@ -111,33 +111,45 @@ class Strip:
         return ['ok']
 
 
+class _Ssdp(asyncio.DatagramProtocol):
+    def __init__(self, strip):
+        self.strip = strip
+        self.transport = None
+
+    def connection_made(self, transport):
+        self.transport = transport
+
+    def datagram_received(self, data, addr):
+        text = data.decode(errors='replace')
+        if 'M-SEARCH' not in text or 'wifi_bulb' not in text:
+            return
+        # адрес, с которого нас видно этому клиенту
+        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            probe.connect((addr[0], 1))
+            ip = probe.getsockname()[0]
+        finally:
+            probe.close()
+        strip, p = self.strip, self.strip.props()
+        reply = ('HTTP/1.1 200 OK\r\nCache-Control: max-age=3600\r\nDate: \r\nExt: \r\n'
+                 f'Location: yeelight://{ip}:{strip.port}\r\nServer: POSIX UPnP/1.0 YGLC/1\r\n'
+                 f'id: {strip.id}\r\nmodel: strip6\r\nfw_ver: 18\r\nsupport: {SUPPORT}\r\n'
+                 f'power: {p["power"]}\r\nbright: {p["bright"]}\r\ncolor_mode: {p["color_mode"]}\r\n'
+                 f'ct: {p["ct"]}\r\nrgb: {p["rgb"]}\r\nhue: {p["hue"]}\r\nsat: {p["sat"]}\r\nname: {p["name"]}\r\n\r\n')
+        self.transport.sendto(reply.encode(), addr)
+        strip.note(addr[0], 'поиск в сети → ответила')
+
+
 async def ssdp(strip):
-    """Отвечаем на поиск ленты в сети."""
-    loop = asyncio.get_running_loop()
+    """Отвечаем на поиск ленты в сети (DatagramProtocol — работает на Python 3.9+ и на всех системах)."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(('', SSDP_PORT))
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
                     struct.pack('4sl', socket.inet_aton(SSDP_ADDR), socket.INADDR_ANY))
     sock.setblocking(False)
-    while True:
-        data, addr = await loop.sock_recvfrom(sock, 2048)
-        text = data.decode(errors='replace')
-        if 'M-SEARCH' not in text or 'wifi_bulb' not in text:
-            continue
-        # адрес, с которого нас видно этому клиенту
-        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        probe.connect((addr[0], 1))
-        ip = probe.getsockname()[0]
-        probe.close()
-        p = strip.props()
-        reply = ('HTTP/1.1 200 OK\r\nCache-Control: max-age=3600\r\nDate: \r\nExt: \r\n'
-                 f'Location: yeelight://{ip}:{strip.port}\r\nServer: POSIX UPnP/1.0 YGLC/1\r\n'
-                 f'id: {strip.id}\r\nmodel: strip6\r\nfw_ver: 18\r\nsupport: {SUPPORT}\r\n'
-                 f'power: {p["power"]}\r\nbright: {p["bright"]}\r\ncolor_mode: {p["color_mode"]}\r\n'
-                 f'ct: {p["ct"]}\r\nrgb: {p["rgb"]}\r\nhue: {p["hue"]}\r\nsat: {p["sat"]}\r\nname: {p["name"]}\r\n\r\n')
-        sock.sendto(reply.encode(), addr)
-        strip.note(addr[0], 'поиск в сети → ответила')
+    transport, _ = await asyncio.get_running_loop().create_datagram_endpoint(lambda: _Ssdp(strip), sock=sock)
+    return transport
 
 
 async def handle(strip, reader, writer):
@@ -288,8 +300,12 @@ async def start(name='Лента (эмулятор)', port=55443, web=47850, ssd
     strip.server = server
     if web:
         await web_app(strip, web)
+    strip.ssdp = None
     if ssdp:
-        asyncio.create_task(globals()['ssdp'](strip))
+        try:
+            strip.ssdp = await globals()['ssdp'](strip)
+        except OSError as e:   # порт 1982 занят — без поиска, по адресу подключиться можно
+            strip.note('-', f'поиск в сети недоступен: {e}')
     return strip
 
 
