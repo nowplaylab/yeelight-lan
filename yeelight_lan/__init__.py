@@ -21,7 +21,7 @@ import socket
 import time
 from dataclasses import dataclass, field
 
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 __all__ = ['Device', 'discover', 'local_ips', 'Bulb', 'MusicMode', 'YeelightError']
 
 SSDP = ('239.255.255.250', 1982)

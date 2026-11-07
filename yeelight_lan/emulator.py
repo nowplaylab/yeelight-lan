@@ -18,13 +18,13 @@
 import argparse
 import asyncio
 import colorsys
+import hashlib
 import json
 import socket
 import struct
 
 import yeelight_lan
 import time
-import uuid
 
 from aiohttp import web
 
@@ -35,7 +35,8 @@ SUPPORT = ('get_prop set_default set_power toggle set_bright start_cf stop_cf se
 
 class Strip:
     def __init__(self, name, port):
-        self.id = '0x' + uuid.uuid4().hex[:16]
+        # постоянный номер: после перезапуска эмулятор — та же «лента», выбирать заново не надо
+        self.id = '0x' + hashlib.sha1(f'{socket.gethostname()}|{name}|{port}'.encode()).hexdigest()[:16]
         self.name = name
         self.port = port
         self.power = 'on'
