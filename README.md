@@ -9,7 +9,7 @@ Made by [nowplaylab](https://github.com/nowplaylab) for [NowPlaying](https://git
 ## Install
 
 ```
-pip install git+https://github.com/nowplaylab/yeelight-lan@v0.2.0
+pip install git+https://github.com/nowplaylab/yeelight-lan@v0.2.1
 ```
 
 Python 3.9+. Turn on **LAN Control** for the device in the Yeelight app first.

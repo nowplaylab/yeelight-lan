@@ -21,8 +21,8 @@ import socket
 import time
 from dataclasses import dataclass, field
 
-__version__ = '0.2.0'
-__all__ = ['Device', 'discover', 'Bulb', 'MusicMode', 'YeelightError']
+__version__ = '0.2.1'
+__all__ = ['Device', 'discover', 'local_ips', 'Bulb', 'MusicMode', 'YeelightError']
 
 SSDP = ('239.255.255.250', 1982)
 SEARCH = ('M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1982\r\nMAN: "ssdp:discover"\r\n'
@@ -80,19 +80,53 @@ def _parse(data):
                   support=h.get('support', '').split(), props=props)
 
 
+def local_ips():
+    """Адреса IPv4 этого компьютера во всех сетях (Wi-Fi, кабель, VPN…), кроме служебных 169.254.*."""
+    ips = set()
+    try:
+        ips.update(i[4][0] for i in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET))
+    except OSError:
+        pass
+    for probe in ('192.168.0.1', '10.0.0.1', '8.8.8.8'):   # адрес, через который ходит обычный трафик
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect((probe, 1))
+            ips.add(s.getsockname()[0])
+        except OSError:
+            pass
+        finally:
+            s.close()
+    return sorted(ip for ip in ips if not ip.startswith(('127.', '169.254.', '0.')))
+
+
+def _send_search(s, target):
+    """Поиск в каждую сеть по отдельности: иначе система шлёт его только в одну — например,
+    в туннель VPN, — и лента в домашней сети его не услышит."""
+    if target != SSDP:
+        s.sendto(SEARCH, target)
+        return
+    for ip in local_ips() + ['127.0.0.1']:
+        try:
+            s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(ip))
+            s.sendto(SEARCH, target)
+        except OSError:
+            pass
+
+
 def discover(timeout=2.0, target=SSDP):
     """Найти устройства Yeelight в сети (блокирующий вызов, ~timeout секунд)."""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
     s.settimeout(0.3)
+    s.bind(('', 0))
     found = {}
     try:
         end = time.time() + timeout
-        s.sendto(SEARCH, target)
+        _send_search(s, target)
         again = False
         while time.time() < end:
             if not again and time.time() > end - timeout / 2:
-                s.sendto(SEARCH, target)   # UDP может потеряться — спросим ещё раз
+                _send_search(s, target)   # UDP может потеряться — спросим ещё раз
                 again = True
             try:
                 data, _ = s.recvfrom(4096)

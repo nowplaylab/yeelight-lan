@@ -21,6 +21,8 @@ import colorsys
 import json
 import socket
 import struct
+
+import yeelight_lan
 import time
 import uuid
 
@@ -146,10 +148,30 @@ async def ssdp(strip):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(('', SSDP_PORT))
-    sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
-                    struct.pack('4sl', socket.inet_aton(SSDP_ADDR), socket.INADDR_ANY))
+    joined = set()
+
+    def join():
+        # слушаем поиск в каждой сети компьютера (а не только в той, что система считает главной —
+        # с VPN это туннель); сети появляются и пропадают, поэтому проверяем раз в 30 с
+        for ip in yeelight_lan.local_ips() + ['127.0.0.1']:
+            if ip in joined:
+                continue
+            try:
+                sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
+                                socket.inet_aton(SSDP_ADDR) + socket.inet_aton(ip))
+                joined.add(ip)
+            except OSError:
+                pass
+    join()
     sock.setblocking(False)
-    transport, _ = await asyncio.get_running_loop().create_datagram_endpoint(lambda: _Ssdp(strip), sock=sock)
+    loop = asyncio.get_running_loop()
+    transport, _ = await loop.create_datagram_endpoint(lambda: _Ssdp(strip), sock=sock)
+
+    async def rejoin():
+        while not transport.is_closing():
+            await asyncio.sleep(30)
+            join()
+    strip.ssdp_task = asyncio.create_task(rejoin())
     return transport
 
 
