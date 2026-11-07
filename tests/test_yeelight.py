@@ -1,5 +1,6 @@
 """Проверки на встроенном эмуляторе: команды, лимит частоты, музыкальный режим, поиск."""
 import asyncio
+import time
 import unittest
 
 import yeelight_lan
@@ -55,6 +56,21 @@ class YeelightTest(unittest.IsolatedAsyncioTestCase):
             await asyncio.sleep(0.3)
         self.assertEqual(self.strip.bright, 30)
         self.assertEqual(self.strip.music_cmds, 3)
+
+    async def test_music_mode_is_immediate(self):
+        # мелкие команды подряд не должны копиться в пачки: каждая доходит почти сразу
+        async with self.bulb.music(local_ip='127.0.0.1') as m:
+            await asyncio.sleep(0.1)
+            delays = []
+            for i in range(20):
+                n = len(self.strip.music_times)
+                sent = time.perf_counter()
+                m.send('set_bright', [10 + i, 'sudden', 0])
+                while len(self.strip.music_times) == n and time.perf_counter() - sent < 1:
+                    await asyncio.sleep(0.001)
+                delays.append(self.strip.music_times[-1] - sent)
+                await asyncio.sleep(0.01)
+        self.assertLess(max(delays), 0.05, delays)
 
     async def test_discover(self):
         strip = await emulator.start(name='Поиск', port=0, web=None, ssdp=True)

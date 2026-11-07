@@ -49,6 +49,7 @@ class Strip:
         self.quota = {}               # соединение -> [времена команд за минуту]
         self.music_cmds = 0
         self.music_started = 0
+        self.music_times = []         # time.perf_counter() прихода команд музыкального режима (для замеров)
 
     # ---------- состояние ----------
 
@@ -217,6 +218,8 @@ async def music(strip, host, port):
                 break
             try:
                 cmd = json.loads(line)
+                strip.music_times.append(time.perf_counter())
+                del strip.music_times[:-500]
                 strip.run(cmd['method'], cmd.get('params', []))
                 strip.music_cmds += 1
                 strip.changes.set()

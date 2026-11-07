@@ -21,12 +21,23 @@ import socket
 import time
 from dataclasses import dataclass, field
 
-__version__ = '0.1.1'
+__version__ = '0.2.0'
 __all__ = ['Device', 'discover', 'Bulb', 'MusicMode', 'YeelightError']
 
 SSDP = ('239.255.255.250', 1982)
 SEARCH = ('M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1982\r\nMAN: "ssdp:discover"\r\n'
           'ST: wifi_bulb\r\n\r\n').encode()
+
+
+def _no_delay(writer):
+    """Отправлять каждую команду сразу: без этого система копит мелкие пакеты (алгоритм Нейгла)
+    и команда может задержаться на десятки–сотни миллисекунд — для мигания в такт это заметно."""
+    sock = writer.get_extra_info('socket')
+    if sock is not None:
+        try:
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        except OSError:
+            pass
 
 
 class YeelightError(Exception):
@@ -109,6 +120,7 @@ class Bulb:
             reader, writer = await asyncio.wait_for(asyncio.open_connection(self.ip, self.port), self.timeout)
         except (OSError, asyncio.TimeoutError) as e:
             raise YeelightError(f'нет связи с {self.ip}: {e}') from None
+        _no_delay(writer)
         try:
             self._id += 1
             cid = self._id
@@ -181,6 +193,7 @@ class MusicMode:
             if got.done():
                 w.close()
             else:
+                _no_delay(w)
                 got.set_result((r, w))
         self._server = await asyncio.start_server(on_conn, '0.0.0.0', 0)
         port = self._server.sockets[0].getsockname()[1]
