@@ -1,0 +1,30 @@
+name: Publish to PyPI
+
+# Новый тег vX.Y.Z → проверка тестов, сборка и публикация на PyPI.
+# Вручную (Actions → Run workflow) — опубликовать версию из pyproject.toml, например самую первую.
+# Без паролей и токенов: PyPI доверяет этому репозиторию (Trusted Publisher, окружение pypi).
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Version in the tag matches pyproject.toml
+        run: |
+          V=$(python -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          [ "$GITHUB_REF_TYPE" != tag ] || [ "v$V" = "$GITHUB_REF_NAME" ] || { echo "тег $GITHUB_REF_NAME, а в pyproject.toml $V"; exit 1; }
+      - name: Tests
+        run: pip install . && python -m unittest discover -s tests
+      - name: Build
+        run: pip install build && python -m build
+      - uses: pypa/gh-action-pypi-publish@release/v1

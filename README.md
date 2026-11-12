@@ -1,6 +1,6 @@
 # yeelight-lan
 
-**English** | [Русский](README.ru.md)
+**English** | [Русский](https://github.com/nowplaylab/yeelight-lan/blob/main/README.ru.md)
 
 Control Yeelight lamps and light strips over your home network from Python: discovery, colour, brightness and **music mode** for flashing to the beat. No cloud, no account. Comes with a **strip emulator**, so you can build and test without the hardware.
 
