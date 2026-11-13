@@ -57,6 +57,19 @@ class YeelightTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.strip.bright, 30)
         self.assertEqual(self.strip.music_cmds, 3)
 
+    async def test_music_mode_blocked_explains_why(self):
+        # устройство приняло set_music, но подключиться к нам не может (как при брандмауэре)
+        async def never_connects(strip, host, port):
+            pass
+        real = emulator.music
+        emulator.music = never_connects
+        try:
+            with self.assertRaises(yeelight_lan.YeelightError) as err:
+                await self.bulb.music(local_ip='127.0.0.1').start(timeout=0.3)
+        finally:
+            emulator.music = real
+        self.assertIn('брандмауэр', str(err.exception))
+
     async def test_music_mode_is_immediate(self):
         # мелкие команды подряд не должны копиться в пачки: каждая доходит почти сразу
         async with self.bulb.music(local_ip='127.0.0.1') as m:

@@ -21,7 +21,7 @@ import socket
 import time
 from dataclasses import dataclass, field
 
-__version__ = '0.2.2'
+__version__ = '0.2.3'
 __all__ = ['Device', 'discover', 'local_ips', 'Bulb', 'MusicMode', 'YeelightError']
 
 SSDP = ('239.255.255.250', 1982)
@@ -237,14 +237,27 @@ class MusicMode:
             try:
                 probe.connect((self.bulb.ip, 1))
                 ip = probe.getsockname()[0]
+            except OSError as e:
+                await self.stop()
+                raise YeelightError(f'музыкальный режим не включился: нет сети до {self.bulb.ip} ({e})') from None
             finally:
                 probe.close()
         try:
             await self.bulb.command('set_music', [1, ip, port])
-            self._conn = await asyncio.wait_for(got, timeout)
-        except (YeelightError, asyncio.TimeoutError) as e:
+        except YeelightError as e:
             await self.stop()
             raise YeelightError(f'музыкальный режим не включился: {e}') from None
+        try:
+            self._conn = await asyncio.wait_for(got, timeout)
+        except asyncio.TimeoutError:
+            # команду устройство приняло, но подключиться к нам не смогло — почти всегда это
+            # брандмауэр (входящие подключения) или неверный адрес компьютера
+            await self.stop()
+            raise YeelightError(
+                f'музыкальный режим не включился: устройство приняло команду, но за {timeout:g} с не подключилось '
+                f'к этому компьютеру ({ip}:{port}). Скорее всего, входящее подключение заблокировал брандмауэр: '
+                f'разрешите программе (Python) входящие подключения в частной сети. Если у компьютера несколько '
+                f'сетей, передайте его адрес в домашней сети: bulb.music(local_ip=...)') from None
         return self
 
     def send(self, method, params=()):

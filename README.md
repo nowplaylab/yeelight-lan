@@ -39,6 +39,8 @@ asyncio.run(main())
 
 Plain commands are limited by the device to **60 per minute per connection**; `Bulb` opens a short connection per command, which also survives Wi-Fi drops and device restarts. For anything faster, use `MusicMode`.
 
+In music mode the device connects **to your computer**, so the firewall must allow incoming connections for your program (on Windows: allow Python or your app on private networks). If it does not, `music()` fails with an error that says so. With several networks (VPN, a second adapter), pass the computer's home address: `bulb.music(local_ip='192.168.1.10')`.
+
 ## Emulator
 
 ```
