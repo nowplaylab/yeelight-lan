@@ -1,6 +1,13 @@
-# yeelight-lan
+<p align="center"><a href="https://github.com/nowplaylab/yeelight-lan"><img src="https://raw.githubusercontent.com/nowplaylab/yeelight-lan/main/docs/banner.png" alt="yeelight-lan" width="100%"></a></p>
 
-[English](README.md) | **Русский**
+<p align="center"><a href="https://github.com/nowplaylab/yeelight-lan/blob/main/README.md">English</a> &nbsp;·&nbsp; <b>Русский</b> &nbsp;·&nbsp; <a href="https://pypi.org/project/yeelight-lan/">PyPI</a></p>
+
+<p align="center">
+<a href="https://pypi.org/project/yeelight-lan/"><img src="https://img.shields.io/pypi/v/yeelight-lan?style=flat-square&labelColor=3B3C61&color=772556&label=PyPI" alt="PyPI"></a>
+<a href="https://github.com/nowplaylab/yeelight-lan/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/nowplaylab/yeelight-lan/tests.yml?branch=main&style=flat-square&labelColor=3B3C61&label=%D1%82%D0%B5%D1%81%D1%82%D1%8B" alt="tests"></a>
+<img src="https://img.shields.io/badge/python-3.9+-55507F?style=flat-square&labelColor=3B3C61" alt="Python 3.9+">
+<a href="https://github.com/nowplaylab/yeelight-lan/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-8B85A7?style=flat-square&labelColor=3B3C61" alt="MIT"></a>
+</p>
 
 Управление лампами и лентами Yeelight по домашней сети из Python: поиск, цвет, яркость и **музыкальный режим** для мигания в такт. Без облака и аккаунта. В комплекте **эмулятор ленты**: можно делать и проверять без железа.
 

@@ -1,6 +1,13 @@
-# yeelight-lan
+<p align="center"><a href="https://github.com/nowplaylab/yeelight-lan"><img src="https://raw.githubusercontent.com/nowplaylab/yeelight-lan/main/docs/banner.png" alt="yeelight-lan" width="100%"></a></p>
 
-**English** | [Русский](https://github.com/nowplaylab/yeelight-lan/blob/main/README.ru.md)
+<p align="center"><b>English</b> &nbsp;·&nbsp; <a href="https://github.com/nowplaylab/yeelight-lan/blob/main/README.ru.md">Русский</a> &nbsp;·&nbsp; <a href="https://pypi.org/project/yeelight-lan/">PyPI</a></p>
+
+<p align="center">
+<a href="https://pypi.org/project/yeelight-lan/"><img src="https://img.shields.io/pypi/v/yeelight-lan?style=flat-square&labelColor=3B3C61&color=772556&label=PyPI" alt="PyPI"></a>
+<a href="https://github.com/nowplaylab/yeelight-lan/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/nowplaylab/yeelight-lan/tests.yml?branch=main&style=flat-square&labelColor=3B3C61&label=tests" alt="tests"></a>
+<img src="https://img.shields.io/badge/python-3.9+-55507F?style=flat-square&labelColor=3B3C61" alt="Python 3.9+">
+<a href="https://github.com/nowplaylab/yeelight-lan/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-8B85A7?style=flat-square&labelColor=3B3C61" alt="MIT"></a>
+</p>
 
 Control Yeelight lamps and light strips over your home network from Python: discovery, colour, brightness and **music mode** for flashing to the beat. No cloud, no account. Comes with a **strip emulator**, so you can build and test without the hardware.
 
